@@ -40,6 +40,7 @@ class ViewController: NSViewController {
                 let path = result!.path
                 if (fileManager.fileExists(atPath: "\(path)/bin/agent.sh")){
                     pathLabel.stringValue = path
+                    buildAgentPath = path
                     runButton.isEnabled = true
                 }else {
                     pathLabel.stringValue = "Not a valid buildAgent Folder!"
@@ -54,6 +55,7 @@ class ViewController: NSViewController {
     }
     
     @IBAction func run(_ sender: NSButton) {
+        shell("cd \(buildAgentPath)/bin/ && sh agent.sh run")
     }
     
     override func viewDidLoad() {
@@ -68,7 +70,7 @@ class ViewController: NSViewController {
         }
     }
     
-    func shell(_ command: String) -> String {
+    func shell(_ command: String) {
         let task = Process()
         task.launchPath = "/bin/bash"
         task.arguments = ["-c", command]
@@ -79,8 +81,8 @@ class ViewController: NSViewController {
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         let output: String = NSString(data: data, encoding: String.Encoding.utf8.rawValue)! as String
-
-        return output
+        
+        logTextView.string += output
     }
 }
 
