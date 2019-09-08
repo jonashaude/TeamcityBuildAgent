@@ -11,7 +11,7 @@ import Foundation
 
 class ViewController: NSViewController {
     let fileManager = FileManager()
-    
+    var applicationSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.path + "/teamcityBuildAgent/"
     
     var buildAgentPath = ""
     
@@ -37,8 +37,13 @@ class ViewController: NSViewController {
             let result = dialog.url // Pathname of the file
             
             if (result != nil) {
-                let path = result!.path
+                var path = result!.path
                 if (fileManager.fileExists(atPath: "\(path)/bin/agent.sh")){
+                    
+                    path = path.replacingOccurrences(of: " ", with: "\\ ")
+                    shell("cp -r '\(path)' '\(applicationSupport)'")
+                    
+                    
                     pathLabel.stringValue = path
                     buildAgentPath = path
                     runButton.isEnabled = true
@@ -53,14 +58,36 @@ class ViewController: NSViewController {
         }
         
     }
+
     
     @IBAction func run(_ sender: NSButton) {
-        shell("cd \(buildAgentPath)/bin/ && sh agent.sh run")
+        if(sender.title == "Run"){
+            logTextView.string += "\n -------Start Agent------- \n"
+            shell("cd '\(applicationSupport)/buildAgent/bin/' && sh agent.sh start")
+            sender.title = "Stop"
+        }else {
+            logTextView.string += "\n -------Stop Agent------- \n"
+            shell("cd '\(applicationSupport)/buildAgent/bin/' && sh agent.sh stop")
+            sender.title = "Run"
+        }
+        
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        print(applicationSupport)
+        if (!fileManager.fileExists(atPath: applicationSupport)) {
+            do {
+                try FileManager.default.createDirectory(atPath: applicationSupport, withIntermediateDirectories: false, attributes: .none)
+            }catch {
+                print(error)
+            }
+        }else {
+            selectButton.isEnabled = false
+            runButton.isEnabled = true
+        }
+        
         // Do any additional setup after loading the view.
     }
 
@@ -79,10 +106,20 @@ class ViewController: NSViewController {
         task.standardOutput = pipe
         task.launch()
 
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        let output: String = NSString(data: data, encoding: String.Encoding.utf8.rawValue)! as String
-        
-        logTextView.string += output
+        let data = pipe.fileHandleForReading
+        data.readabilityHandler = { pipe in
+            if let line = String(data: pipe.availableData, encoding: String.Encoding.utf8) {
+                // Update your view with the new text here
+                
+                DispatchQueue.main.sync {
+                    self.logTextView.string += line
+                    self.logTextView.scrollToEndOfDocument(self)
+                }
+                
+            } else {
+                print("Error decoding data: \(pipe.availableData)")
+            }
+        }
     }
 }
 
