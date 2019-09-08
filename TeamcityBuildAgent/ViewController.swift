@@ -63,11 +63,11 @@ class ViewController: NSViewController {
     @IBAction func run(_ sender: NSButton) {
         if(sender.title == "Run"){
             logTextView.string += "\n -------Start Agent------- \n"
-            shell("cd '\(applicationSupport)/buildAgent/bin/' && sh agent.sh start")
+            shell("cd '\(applicationSupport)buildAgent/bin/' && sh agent.sh start")
             sender.title = "Stop"
         }else {
             logTextView.string += "\n -------Stop Agent------- \n"
-            shell("cd '\(applicationSupport)/buildAgent/bin/' && sh agent.sh stop")
+            shell("cd '\(applicationSupport)buildAgent/bin/' && sh agent.sh stop")
             sender.title = "Run"
         }
         
@@ -77,7 +77,7 @@ class ViewController: NSViewController {
         super.viewDidLoad()
 
         print(applicationSupport)
-        if (!fileManager.fileExists(atPath: applicationSupport)) {
+        if (!fileManager.fileExists(atPath: applicationSupport) || !fileManager.fileExists(atPath: "\(applicationSupport)buildAgent/bin/agent.sh")) {
             do {
                 try FileManager.default.createDirectory(atPath: applicationSupport, withIntermediateDirectories: false, attributes: .none)
             }catch {
